@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Booking</title>
+	<!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+	<script src="{{url_for('static',filename = 'js/jquery.js')}}"></script>
+	
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+	<script type="text/javascript" src="static/js/slick.min.js"></script>
+	<link rel="stylesheet" href="static/css/jquery.timepicker.min.css">
+	<link rel="stylesheet" href="static/css/bootstrap-select.min.css" />
+	<link rel='stylesheet' href='static/css/jquery-ui.css' />
+	<link rel="stylesheet" type="text/css" href="static/css/slick.css"/>
+	<!-- Add the slick-theme.css if you want default styling -->
+	<link rel="stylesheet" type="text/css" href="static/css/slick-theme.css"/>
+
+
+		<script src="{{url_for('static',filename = 'js/jquery.timepicker.min.js')}}"></script>
+		<script src="{{url_for('static',filename = 'js/jquery-ui.js')}}"></script>
+		<script src="{{url_for('static',filename = 'js/bootstrap-select.min.js')}}"></script>	
+
+
+	<script>
+		$(document).ready(function() {
+
+			var currentRoutePrice = 0
+
+			var destinations = []
+
+			ROOT = 'http://a8a01f42.ngrok.io'
+
+			$('#date').datepicker({
+				nextText: '',
+				prevText: '',
+				minDate: new Date(2017, 7, 1),
+				maxDate: new Date(2017, 7, 31)
+			})
+
+			$('#routes').slick({
+				ots: true
+			})
+
+			$('a.scroll').click(function() {
+			    $('html, body').animate({
+			        scrollTop: $('#' + $(this).attr('data-target')).offset().top
+			    }, 1000);
+			    return false;
+			});
+
+			$('#time').timepicker({
+				timeFormat: 'HH:mm',
+				scrollbar: true,
+				interval: 10
+			})
+
+			$('.selectpicker').selectpicker({
+				style: 'btn-default',
+				size: 6
+			})
+
+			function capitalizeFirstLetter(string) {
+			    return string.charAt(0).toUpperCase() + string.slice(1);
+			}
+			
+			$.get(ROOT + '/all', function(places) {
+				places.splice(0, 1)
+				places.sort()
+				
+				$.each(places, function (i, item) {	
+				    $('#from').append($('<option>', { 
+				        value: item,
+				        text : capitalizeFirstLetter(item)
+				    }));
+				});
+				
+				$('#from').selectpicker('refresh')
+			})
+
+			var areEqual = function(string1, string2) { return string1.toUpperCase() === string2.toUpperCase() }
+
+			var limitMaxPassengers = function(e) {
+				var adults = parseInt($('#adults').val())
+				var children = parseInt($('#children').val())
+
+				var route = $('#from').val()
+
+				if (areEqual(route, 'hikawuda') || areEqual(route, 'bia') 
+					|| areEqual(route, 'galle')) {
+					console.log('Sum: ' + (adults + children))
+					if ((adults + children) > 6) {
+						alert('This route can have a maximum of 6 passengers')
+						$('#adults').val(0)
+						$('#children').val(0)
+					}
+				} else {
+					if ((adults + children) > 10) {
+						alert('This route can have a maximum of 10 passengers')
+						$('#adults').val(0)
+						$('#children').val(0)	
+					}
+				}
+			}
+
+			var calculateAmount = function() {
+				var totalPassengers = parseInt($('#adults').val()) + parseInt($('#children').val())
+				for (var i = 0; i < _result.length; i++) {
+					if (areEqual(_result[i][0]['name'], $('#to').val())) {
+						$('#price').html('USD ' + _result[i][2]['usd'] * totalPassengers + 
+							' | ' + ' LKR ' + _result[i][1]['rupee'] * totalPassengers)
+					}
+				}
+				$('#price').html()
+			}
+
+			$('#adults').blur(limitMaxPassengers)
+			$('#children').blur(limitMaxPassengers)
+
+			$('#adults').blur(calculateAmount)
+			$('#children').blur(calculateAmount)			
+
+			var _result = []
+
+			var currentForm = 0 // travel details tab
+	
+			// Load all places
+			
+			/* Form filling steps */
+			$('#next').click(function() {
+				$(function() {
+					$('.travel').css({
+						'display': 'none'
+					}, {duration: 200, queue: false})
+
+					$('.personal').css({
+						'display': 'block'
+					}, {duration: 200, queue: false})
+				})
+
+				if (currentForm == 0) {
+					; // do nothing
+				} else {
+					var from = $('#from').val()
+					var to = $('#to').val()
+					var date = $('#date').val()
+					var time = $('#time').val()
+					var adults = $('#adults').val()
+					var children = $('#children').val()
+
+					var fname = $('#fname').val()
+					var lname = $('#lname').val()
+					var email = $('#email').val()
+					var phone = $('#phone').val()
+					var flight = $("#flightno").val()
+					var passport = $('#passport').val()
+					var oCountry = $('#ocountry').val()
+
+					var submitData = {
+						from: from,
+						to: to,
+						date: date,
+						time: time,
+						adults: adults,
+						children: children,
+						fname: fname,
+						lname: lname,
+						email: email,
+						phone: phone,
+						flight: flight,
+						passport: passport,
+						oCountry: oCountry
+					}
+
+					$.post(ROOT + '/submit', submitData, function(done) {
+						console.log(done)
+						console.log('Submitted!')
+						alert('Submitted!')
+					})
+				}	
+
+				currentForm = 1
+
+			})
+
+			$('#from').on('hidden.bs.select', function(e) {
+				var selected = $('#from').val()
+
+				$.get(ROOT + '/route?from=' + selected.toUpperCase(), function(result) {
+					var destinations = []
+
+					_result = result
+
+					for (var i = 0; i < result.length; i++) {
+						destinations.push(result[i][0]['name'])
+					}
+
+					destinations = Array.from(new Set(destinations))
+
+					$('#to').html('')
+
+					$.each(destinations, function (i, item) {
+					    $('#to').append($('<option>', { 
+					        value: item,
+					        text : capitalizeFirstLetter(item)
+					    }));
+					});
+					
+					$('#to').selectpicker('refresh')
+				})
+
+			})
+
+			$('#to').on('hidden.bs.select', function(e) {
+
+				var stop = $('#to').val()
+				var times = []
+				for (var i = 0; i < _result.length; i++) {
+					if (areEqual(_result[i][0]['name'], stop)) {
+						times.push(_result[i][3]['time'])
+					}
+				}
+				console.log(times)
+				console.log($('a.ui-corner-all').length)
+				for (var i = 0; i < $('a.ui-corner-all').length; i++) {
+					var flag = false
+					for (var j = 0; j < times.length; j++) {
+						if (times[j] == '') continue
+						if ($('a.ui-corner-all')[i].innerHTML.indexOf(times[j]) != -1) {
+							console.log('Found: ' + times[j])
+							flag = true 
+							break
+						}
+					}
+					if (!flag) {
+						console.log('hiding ')
+						var timeLi = $('a.ui-corner-all')[i]
+						$(timeLi).parent('li').hide()
+					}
+				}
+
+
+			})
+
+		})
+	</script>
+	
+	<style>
+		body {
+			text-align: right;			
+			background: #222;
+		}
+
+		.personal {
+			display: none;
+		}
+		/* body::after {
+			background: url(background.jpeg);
+			background-repeat:no-repeat;
+			opacity: 0.3;
+			 background-size:cover;
+		}
+		 */
+		 
+		 .ui-corner-hidden {
+		 	display: none;
+		 }
+
+		 img.background {
+		 	position: absolute;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: auto;
+			opacity: 0.1;
+		 }
+		form.container-fluid {
+			font-family: "Segoe UI", "Lucida Sans", "Open Sans", sans-serif;
+			text-align: center;
+			padding-top: 10px;
+			position: absolute;
+			width: 100%;
+			top: 160px;
+			padding-bottom: 10px;
+		}
+
+		#nav-contact {
+			background: #333;		
+			opacity: 0.6;
+		}
+
+		.first {
+			margin-top: -1px;
+			margin-bottom: -1px;
+		}
+/* 
+		nav {
+			border-radius: 0px;
+			height: 80px;
+		}
+ */
+		select {
+			border-radius: 0px;
+		}
+
+		/* nav div {
+			background: white;
+			border-radius: 0px;
+		} */
+	
+		.btn-success {
+			border-radius: 0px;
+			text-transform: uppercase;
+		}
+
+		.first {
+			background: #533; //rgba(35, 23, 24, 0.85);
+			padding: 6px;
+		}
+		input[type="date"], input[type="text"], input[type="number"], input[type="time"], input[type="email"], input[type="phone"] {
+			border-radius: 0px;
+			border-style:solid;
+			padding: 5px;
+		}
+		label {
+			font-weight: normal;
+		}
+		h1, h2, h3, h4, h5 {
+			color: white;		
+		}
+		.form-group {
+			padding: 2px;
+			color: white;
+			text-align: left;
+		}
+
+		.info-title {
+			color: black;
+			font-weight: bold;
+		}
+		.info-right {
+			width: 80%;
+			display: inline-block;
+			float: right;
+		}
+		.info-left {
+			display: inline-block;
+			width: 20%;
+		}
+		.info-text {
+			text-align: left;
+			font-weight: bold;
+			color: #333;
+		}
+		.info-row {
+			padding-top: 40px;
+			padding-bottom: 40px;
+		}
+
+		.card {
+			display: inline-block;
+			background: white;
+		}
+
+		.dark {
+			background: #333;
+			border: #333;
+			width: 80%;
+			color: white;
+			margin: auto auto;
+			padding: 10px !important;
+		}
+
+		.card-left {
+			display: inline-block; width: 50%;float:left;
+		}
+		.card-right {
+			padding: 30px;
+			text-align: left;
+			display: inline-block; width: 50%;float:right;
+		}
+/* f
+		.navbar-header {
+			float: left;
+			width: 60%;
+			height: 100%;
+		}
+ */
+		.city-list {
+			text-align: left;
+			float: left;
+			margin: 0 0;
+			display: block;
+			padding: 0px;
+			list-style: none;
+		}
+
+		.city-list-item {
+			margin: 0 0;
+			color: #6ba917;
+			text-align: left;	
+			display: block;
+			margin-bottom: 6px;
+			cursor: pointer;
+		}
+
+		.city-list-item:before {
+			content:'\25BA';
+			margin-right: 8px;
+			color: #ee9e07;
+		}
+
+		.city-list-item:hover, .city-list-item:focus {
+			color: #324f0b;
+		}
+
+		.routeMap {
+			margin: auto auto;
+			width: 720px;
+			height: 540px;
+			border-radius: 30px;
+		}
+
+	</style>
+</head>
+<body>
+	<img class='background' src="static/images/background.jpeg" alt="Bus">
+	<!-- <nav class="navbar navbar-fixed-top navbar-default">
+	  <div class="container-fluid" style="height: 100%;">
+	    <div class="navbar-header">
+	      <a class="navbar-brand" href="#" style="padding-top: 0px">
+	        <img alt="Brand" src="logo.jpg" width="162" height="80" />
+	      </a>
+	    </div>
+	    <div style="width: 40%;float: right; height: 100%; vertical-align: center; bakground: black">
+	   		<h5 style="position: absolute; color: black">efe</h5>
+	    </div>
+	  </div>
+	</nav> -->
+
+
+	<nav class="navbar navbar-default navbar-fixed-top" style='background: white'>
+	  
+	  <div style="background: black; width: 100%;text-align: left;
+    padding-bottom: 1px; padding: 10px;opacity: 0.7" class="container-fluid">
+	  	<h5 style="color: white"></h5>
+	  </div>
+
+	  <div class="container-fluid">
+	    <!-- Brand and toggle get grouped for better mobile display -->
+	    <div class="navbar-header">
+	      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+	        <span class="sr-only">Toggle navigation</span>
+	        <span class="icon-bar"></span>
+	        <span class="icon-bar"></span>
+	        <span class="icon-bar"></span>
+	      </button>
+	      
+	      	<img alt="Brand" style="margin: 0; padding: 0;" src="static/images/logo.jpg" height="55">
+	      
+	    </div>
+
+	    <!-- Collect the nav links, forms, and other content for toggling -->
+	    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+	      <ul class="nav navbar-nav" style="visibility: hidden">
+	        <li class="active"><a href="#">Link <span class="sr-only">(current)</span></a></li>
+	        <li><a href="#">Link</a></li>
+	        <li class="dropdown">
+	          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
+	          <ul class="dropdown-menu">
+	            <li><a href="#">Action</a></li>
+	            <li><a href="#">Another action</a></li>
+	            <li><a href="#">Something else here</a></li>
+	            <li role="separator" class="divider"></li>
+	            <li><a href="#">Separated link</a></li>
+	            <li role="separator" class="divider"></li>
+	            <li><a href="#">One more separated link</a></li>
+	          </ul>
+	        </li>
+	      </ul>
+	      <form class="navbar-form navbar-left" style="visibility: hidden">
+	        <div class="form-group">
+	          <input type="text" class="form-control" placeholder="Search">
+	        </div>
+	        <button type="submit" class="btn btn-default">Submit</button>
+	      </form>
+	      <ul class="nav navbar-nav navbar-right">
+	        
+	        
+	      </ul>
+	    </div><!-- /.navbar-collapse -->
+	  </div><!-- /.container-fluid -->
+	</nav>
+
+	<form class="container-fluid">
+			
+		<div class="row">
+			<div class="col-md-5">
+				<h1 style="font-family: Lato, Helvetica; font-weight: bold; font-size: 78px; width: 390px; text-align: left;line-height:100px">Enjoy the Freedom</h1>
+				<h4 style="font-family: Lato, Helvetica; width: 600px; text-align: left;letter-spacing: 0.7px; line-height: 25px">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+				tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.</h4>
+				
+			</div>
+
+			<div class="col-md-7">
+			
+			<div class="row travel">
+				<div class="col-md-3" style="background: transparent" ></div>
+				<div class="col-md-3 first" style="background:  rgba(35, 23, 24, 0.85);">
+					<h4>Travel details</h4>
+				</div> 
+				<div class="col-md-2"  style="background: transparent"></div>
+			</div>
+
+			
+			<div class="row travel">
+				<div class="col-md-3"></div>
+				<div class="col-md-4 first">
+					<div class="form-group">
+					    <label for="from">From</label><br />
+					    <select class='form-control btn-info selectpicker' data-live-search="true" style="background: white; box-shadow: none;" data-size="5" id='from' title='Choose a location'>
+							
+					    </select>
+					    					  <small class="form-text text-muted" style='visibility: hidden'>Free hotel drop available </small>
+					    <!-- <input type="text" class="form-control" id="from" placeholder="Colombo Airport"> -->
+					</div>	
+				</div>
+
+				<div class="col-md-4 first">
+					
+					<div class="form-group">
+					  <label for="to">To</label><br />
+					  <select data-size="8" class='form-control btn-info selectpicker'  data-live-search="true" title='----' style="background: white; box-shadow: none; " id='to'>
+					  </select>
+					  <small class="form-text text-muted" style='color: #CCC'>Free hotel drop available. <a href='#' class='scroll' data-target='questions' style="color: #CCC; text-decoration: underline;cursor: pointer">Know more.</a></small>
+					</div>
+
+				</div>
+				<div class="col-md-2"></div>
+			</div>
+
+			<div class="row travel">
+				<div class="col-md-3"></div>
+				<div class="col-md-4 first">
+					<div class="form-group">
+					    <label for="date">Date</label><br />
+					    <input type="text" class="form-control" id="date">
+					</div>	
+				</div>
+
+				<div class="col-md-4 first">
+					<div class="form-group">
+					    <label for="time">Time</label><br />
+					    <input type="text" class="form-control" id="time">
+					</div>				
+				</div>
+				<div class="col-md-2"></div>
+			</div>
+
+			<div class="row travel">
+				<div class="col-md-3"></div>
+				<div class="col-md-4 first">
+					<div class="form-group">
+					    <label for="adults">Adults (16+)</label><br />
+					    <input type="number" class="form-control" id="adults" value="0">
+    					  
+					</div>	
+				</div>
+
+				<div class="col-md-4 first">
+					<div class="form-group">
+					    <label for="children">Children</label><br />
+					    <input type="number" class="form-control" id="children" value="0">
+					    
+					</div>	
+				</div>
+				<div class="col-md-2"></div>
+			</div>
+	
+
+			<div class="row travel">
+				<div class="col-md-3"></div>
+				<div class="col-md-4 first">
+					<div class="form-group">
+					   
+					</div>	
+				</div>
+
+				<div class="col-md-4 first">
+					<div class="form-group">
+					   
+					</div>	
+				</div>
+				<div class="col-md-2"></div>
+			</div>
+
+			<div class="row travel">
+				<div class="col-md-3" style="background: transparent"></div>
+				<div class="col-md-8 first">
+					<span style="color: white">Total Amount</span>
+					<h4 id='price' style="color: white">--</h4>
+				</div>
+				<div class="col-md-2" style="background: transparent"></div>
+			</div>
+		
+
+			<div class="row personal">
+				<div class="col-md-3" style="background: transparent" ></div>
+				<div class="col-md-3 first" style="background:  rgba(35, 23, 24, 0.85);">
+					<h4>Personal details</h4>
+				</div> 
+				<div class="col-md-2"  style="background: transparent"></div>
+			</div>
+
+			<div class="row personal">
+				<div class="col-md-3"></div>
+				<div class="col-md-4 first">
+					<div class="form-group">
+					    <label for="fname">First name *</label><br />
+					    <input type="text" class="form-control" id="fname" required>
+					</div>	
+				</div>
+
+				<div class="col-md-4 first">
+					<div class="form-group">
+					    <label for="lname">Last name *</label><br />
+					    <input type="text" class="form-control" id="lname" required>
+					</div>	
+				</div>
+				<div class="col-md-2"></div>
+			</div>
+
+			<div class="row personal">
+				<div class="col-md-3"></div>
+				<div class="col-md-4 first">
+					<div class="form-group">
+					    <label for="email">Email *</label><br />
+					    <input type="email" class="form-control" id="email" required>
+					</div>	
+				</div>
+
+				<div class="col-md-4 first">
+					<div class="form-group">
+					    <label for="phone">Phone *</label><br />
+					    <input type="phone" class="form-control" id="phone" required>
+					</div>	
+				</div>
+				<div class="col-md-2"></div>
+			</div>
+
+			<div class="row personal">
+				<div class="col-md-3"></div>
+				<div class="col-md-4 first">
+					<div class="form-group">
+					    <label for="flightno">Flight number</label><br />
+					    <input type="email" class="form-control" id="flightno">
+					</div>	
+				</div>
+
+				<div class="col-md-4 first">
+					<div class="form-group">
+					    <label for="passport">Passport number</label><br />
+					    <input type="text" class="form-control" id="passport">
+					</div>	
+				</div>
+				<div class="col-md-2"></div>
+			</div>	
+
+			<div class="row personal">
+				<div class="col-md-3"></div>
+				<div class="col-md-4 first">
+					<div class="form-group">
+					    <label for="ocountry">Origin country</label><br />
+					    <input type="text" class="form-control" id="ocountry">
+					</div>	
+				</div>
+
+				<div class="col-md-4 first">
+					<div class="form-group">
+					    <label for="passport">Passport number</label><br />
+					    <input type="text" class="form-control" id="passport">
+					</div>	
+				</div>
+				<div class="col-md-2"></div>
+			</div>	
+
+			<div class="row">
+				<div class="col-md-3" style="background: transparent"></div>
+				<div class="col-md-8 first">
+					<button id='next' type="button" class="btn btn-success" style="background: #6aa816; border: 0; font-weight: bold">Proceed &gt;</button>
+					<br /><br />
+				</div>
+				<div class="col-md-2" style="background: transparent"></div>
+			</div>
+		</div>
+		</div>
+
+		<div class='row info-row' style="margin-top: 15%; background: white">
+			<div class="col-md-4">
+				<div class="info-left"></div>
+				<div class="info-right">
+					<h3 class="info-title">Dummy</h3>
+					<div class="info-text">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+					tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+					quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo</div>
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="info-left">
+					
+				</div>
+				<div class="info-right">
+					<h3 class="info-title">Dummy</h3>
+					<div class="info-text">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+					tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+					quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo</div>
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="info-left"></div>
+				<div class="info-right">
+					<h3 class="info-title">Dummy</h3>
+					<div class="info-text">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+					tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+					quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo</div>
+				</div>
+			</div>
+		</div>
+
+		<div class='row info-row' style="background: #efede8">
+			<h1 style="color: #222;font-weight: bold; margin-bottom: 70px;font-size: 44px">Your Transfer Options</h1>
+			<div class="col-md-6">
+				<div class='card' style="width: 90%;">
+					<div class="card-left" style="background: black;">
+						<img src="static/images/toyotakdh.jpg" width="300" height="225" alt="" class="center-block">
+					</div>
+					<div class="card-right">
+						<h3 style="color: #444; font-weight: bold; margin-top: 0px">Toyota KDH - Van</h3>
+						<h5 style="color: #888; margin-bottom: 20px"><i>Professional Drivers</i></h5>
+
+						<h4 style="color: #666">Depature city</h4>
+						<ul class="city-list">
+							<li class='city-list-item'>Hikaduwa</li>
+							<li class='city-list-item'>Hikaduwa</li>
+							<li class='city-list-item'>Hikaduwa</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class='card' style="width: 90%;">
+					<div class="card-left" style="background: black;">
+						<img src="static/images/yutong.jpg" width="300" height="225" alt="" class="center-block">
+					</div>
+					<div class="card-right">
+						<h3 style="color: #444; font-weight: bold;  margin-top: 0px">Yutong - Bus</h3>
+						<h5 style="color: #888; margin-bottom: 20px"><i>Professional Drivers</i></h5>
+
+						<h4 style="color: #666">Depature city</h4>
+						<ul class="city-list">
+							<li class='city-list-item'>Hikaduwa</li>
+							<li class='city-list-item'>Hikaduwa</li>
+							<li class='city-list-item'>Hikaduwa</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-md-4"></div>
+		</div>
+
+		<div class="row info-row" style="background: #111">
+		<h1 style="margin-bottom: 60px;color: white">Routes</h1>
+			<div class="col-md-2"></div>
+			<div id="routes"  class="col-md-8">
+			  <div><img src="{{url_for('static',filename = 'images/Route_1.jpg')}}" /></div>
+			  <div><img src="{{url_for('static',filename = 'images/Route_4.jpg')}}" /></div>
+			  <div><img src="{{url_for('static',filename = 'images/Route_5.jpg')}}" /></div>
+			  <div><img src="{{url_for('static',filename = 'images/Route_6.jpg')}}" /></div>
+			  <div><img src="{{url_for('static',filename = 'images/Route_7.jpg')}}" /></div>
+			 </div>
+			<div class="col-md-2"></div>
+		</div>
+
+		<div class="row info-row" style='background: #fff' id='questions'>
+			<h1 style="color: #222; font-weight: bold; margin-bottom: 60px;font-size: 44px">Some of Your Questions</h1>
+			<div class="col-md-3"></div>
+			<div class="col-md-6">
+				<div class='question'>
+					<h3 style="color: #333; text-align: left">What is my baggage allowance?</h3>
+					<p style="text-align: left; color: #666">We can accommodate upto 2 pieces of any type of baggage. Each piece of baggage should not maximum
+dimension of (L+W+H) 300cm/118in. However, we will be happy to accommodate water sports
+equipment of large dimensions such surfboards, skateboards, water skis &amp; kitesurfing.
+Also, be rest assured we will take good care of your baggage and assist you with on-loading &amp; off-
+loading your bags from our bus.</p>
+				</div>
+				<div class='question'>
+					<h3 style="color: #333; text-align: left">Would you be able to accommodate my water sports equipment?</h3>
+					<p style="text-align: left; color: #666">We can accommodate upto 2 pieces of any type of baggage. Each piece of baggage should not maximum
+dimension of (L+W+H) 300cm/118in. However, we will be happy to accommodate water sports
+equipment of large dimensions such surfboards, skateboards, water skis &amp; kitesurfing.
+Also, be rest assured we will take good care of your baggage and assist you with on-loading &amp; off-
+loading your bags from our bus.</p>
+				</div>
+				<div class='question'>
+					<h3 style="color: #333; text-align: left">Can I get off the bus at any point along the route of travel?</h3>
+					<p style="text-align: left; color: #666">It would be difficult to make frequent stops along the route because this will cause delays and cause delays to our schedule. However, the driver should be able to accommodate few unscheduled stops in major tourist hotspots along the route or for medical emergencies.</p>
+				</div>
+
+
+				<div class='question'>
+					<h3 style="color: #333; text-align: left">Will somebody assist me with my bags?
+</h3>
+					<p style="text-align: left; color: #666">Be rest assured we will take good care of your baggage and assist you with on-loading & off-loading your bags from our bus.</p>
+				</div>
+
+				<div class='question'>
+					<h3 style="color: #333; text-align: left">Will you be providing infant or child car seats?
+
+</h3>
+					<p style="text-align: left; color: #666">Currently we are not providing infant or child car seats, sorry for the inconvenience. </p>
+				</div>
+
+				<div class='question'>
+					<h3 style="color: #333; text-align: left">How will I know where to find the bus at Colombo Airport?
+	</h3>
+					<p style="text-align: left; color: #666">Our representative will be waiting for you at the arrival building and he/she will be holding a company “Lanka Mayil” signage. The representative will arrive at the terminal 45 minutes before the scheduled departure of the bus and wait in the arrival building till the scheduled departure. He/she will guide you to our bus.
+</p>
+				</div>
+
+
+				<div class='question'>
+					<h3 style="color: #333; text-align: left">Where will I be dropped off?
+</h3>
+					<p style="text-align: left; color: #666">Our bus will stop at specific prominent location at the destination cities. Also, we would be able to arrange drop off at your hotel or place of stay at your request based on availability. 
+However, at Galle & Hikkaduwa we will drop you off at your hotel or place of stay. 
+Drop off/Pick up location for each city in our routes is given below.
+</p>
+				</div>
+
+				<div class='question'>
+					<h3 style="color: #333; text-align: left">Where will I board the bus at locations other than Colombo airport?
+</h3>
+					<p style="text-align: left; color: #666">Our bus will stop at prominent location at each city for about 15 minutes. Also, we would be able to arrange pickup from your hotel or place of stay at your request based on availability. 
+However, at Galle & Hikkaduwa we will pick you up at your hotel or place of stay. 
+Drop off/Pick up location for each city in our routes is given below.
+
+</p>
+				</div>
+
+				<div class='question'>
+					<h3 style="color: #333; text-align: left">What will happen if I miss the bus?
+
+</h3>
+					<p style="text-align: left; color: #666">Please call us and we will advise you on travel options. Or we will reschedule you to our next available bus. 
+</p>
+				</div>
+			</div>
+
+
+
+			<div class="col-md-3"></div>
+		</div>
+
+		<div class="row info-row" style="background: black">
+			<div class="col-md-2"></div>
+			<div class="col-md-4">
+				<img src="static/images/logo-dark.jpg" alt="" width="230" height="100" style="text-align: left">
+				<p style="text-align: left; color: #BBB; font-size: 16px; width: 340px; margin: auto auto;">
+					We are a relatively new startup company based in Colombo, Sri Lanka and we started operations in May of 2017. The core focus of our business is to provide a modern and safe scheduled transportation between major tourist hubs in Sri Lanka. 
+					Sri Lanka is an island with a population of about 20 million and land area of 65,510 sq km. Also Sri Lanka had been engaged in a 30 year old civil war which ended in 2009, the war left much of Sri Lanka’s economy depleted and industries dilapidated. <br /><br />
+					Since the war ended Sri Lanka’s tourism sector has witnessed significant growth and has the potential to be a key driver of Sri Lanka’s economy. The Government of Sri Lanka (GoSL) has been trying to promote public-private partnership to improve Sri Lanka’s infrastructure and transport systems, which is an interesting and fairly new concept for Sri Lanka. <br /><br />
+					The tourism industry heavily depends on transportation systems & services, given the growth in tourism that Sri Lanka is experiencing it is more than likely the country will need significant investment and growth in transportation based services. Based on ministry level statements, GoSL is depending on public-private partnership to meet the growing transportation needs.<br /><br />
+					We, our company is hoping to contribute and help the growth of Sri Lanka’s tourist industry by providing efficient, safe & quality scheduled transportation services.
+					Thanks for using our services!
+
+				</p>
+			</div>
+			<div class="col-md-4">
+				<h2 style="margin-bottom: 20px">Contact Us</h2>
+				<form name='ContactUs'>
+					<div class="form-group">
+					    <input type="text" class="form-control dark" id="name" placeholder="Your name">
+					</div>						
+					<div class="form-group">
+					    <input type="email" class="form-control dark" id="email" placeholder="Your email">
+					</div>	
+					<div class="form-group">
+					    <textarea type="text" class="form-control dark" id="name" style="border-radius: 0px; height: 100px" placeholder="Message"></textarea>
+					</div>				
+					<button id='next' type="button" class="btn btn-success" style="background: #6aa816; border: 0; font-weight: bold; padding-left: 30px; padding-right: 30px">Send</button>												
+				</form>
+			</div>
+			<div class="col-md-2"></div>
+		</div>
+
+	</form>
+
+</body>
+</html>
