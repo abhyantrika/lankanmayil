@@ -57,15 +57,14 @@ def send_email_sms(form_dict,mail_obj):
 				 	\tDate : %s
 					\tTime : %s
 					\tSeats:%s
-					\t fare :%s
 					\t Contact number:+94773161935
 					\t Email :info.lankanmayil@gmail.com
-				"""%(unique_id,form_dict['fname'],form_dict['from'],form_dict['to'],form_dict['date'],form_dict['time'],form_dict['adults'],form_dict['rupee'])
+				"""%(unique_id,form_dict['fname'],form_dict['from'],form_dict['to'],form_dict['date'],form_dict['time'],form_dict['adults'])
 
 		print "sending to admin.."
 		message = "\tYou have received a booking!\n" + message
 		msg = Message('Booking Alert', sender = SENDER_MAIL, recipients = [ADMIN_MAIL])
-		msg.html = message
+		msg.body = message
 		mail_obj.send(msg)
 		print "email sent to admin"
 		print "Sending SMS to admin"
@@ -73,46 +72,18 @@ def send_email_sms(form_dict,mail_obj):
 		print "sms sent to admin"
 
 		print "sending to Customer.."
-		#message = " <h1>Booking Details </h1>" + message
-
-
-		#current_route = route_dict[form_dict['from']]
-		#print current_route
-		#fare_rupee = list(i['rupee'] for i in current_route if i['name'] == form_dict['to'])[0]
-		#fare_usd = list(i['usd'] for i in current_route if i['name'] == form_dict['to'])[0]
-		fare_rupee = 2500
-		fare_usd = 17
-		#seats = int(form_dict['adults'])
-		#fare_msg = "USD: "+str(fare_usd*seats) + "  LKR: "+str(fare_rupee*seats)
-		
-		#if seats >= 4:
-		#	fare_msg = "USD: "+str(fare_usd*seats-(3.5*(seats-3))) + "  LKR: "+str(fare_rupee*seats-(500*(seats-3)))			
-		
 		message = """<html>
-                             <body>
-			     <center> <a href=\"http://www.dumpt.com/img/viewer.php?file=s6j2mcg3rt3psevb4pi2.jpg\" target=\"_blank\"><img src=\"http://www.dumpt.com/img/files/s6j2mcg3rt3psevb4pi2_thumb.jpg\" border=\"0\" alt=\"Dumpt.com\"/></a> </center> <br>
-                                <b> Dear  %s  <br>
-                                Thanks for using Lankan Mayil!!  <br>
-                                Your booking details are shown below.<br>
-                                Your Unique Booking ID: %s <br>
-                                From: %s <br>
-								To : %s <br>
-								Date of Travel: %s <br>
-								Scheduled departure Time: %s <br>
-								No of Passengers: %s <br>
-								Fare per seat: %s <br>
-								Total Fare: %s (inclusive of all taxes)<br>
-								Contact number:+94773161935 <br>
-			                                        Email :info.lankanmayil@gmail.com <br>
-							<br>
-							<b> Note :</b> All payments will be made in cash only.Both USD and Srilankan
-										   Rupee will be accepted. Payment to be made to our agent while departure or boarding.	</b>
-							
-                            </body>
-                    </html>"""%(form_dict['fname'],unique_id,form_dict['from'].title(),form_dict['to'].title(),form_dict['date'],form_dict['time'],form_dict['adults'],'USD: '+str(fare_usd)+"  "+'LKR: '+str(fare_rupee),form_dict['usd']+" "+form_dict['rupee'])	
+			     <body>
+				Dear %s <br>
+				Thanks for using Lankan Mayil!!<br>
+			     	Your booking details are shown below.
+			     	From: %s <br>
 
+			    <body
+			  """
 
-		
+		 
+				
 		msg = Message('Booking Alert', sender = SENDER_MAIL, recipients = [form_dict['email']])
 		msg.html = message
 		mail_obj.send(msg)
@@ -123,7 +94,7 @@ def send_email_sms(form_dict,mail_obj):
 
 		return True
 	except:
-		print "Error sending mail"
+		print "Error"
 		return False
 
 def send_sms(message,SMS_CLIENTS):

@@ -1,10 +1,11 @@
-from flask import Flask, flash, render_template, request, redirect,jsonify
+from flask import Flask, flash, render_template, request, redirect,jsonify,send_file
 from werkzeug import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
 import pymongo
 import csv
 import cPickle as cp
 from helper import *
+import helper
 from configuration import *
 
 KEY = '1234'
@@ -21,10 +22,8 @@ app.config['MAIL_USE_SSL'] = True
 
 mail_obj = Mail(app)
 
+route_dict['bandaranaike international airport'] = route_dict['bia']
 
-with open('routes_final.pkl','rb') as f: #routes_final is updated version
-	route_dict = cp.load(f)
-print 'static data loaded'
 
 @app.route('/')
 def home():
@@ -32,11 +31,13 @@ def home():
 
 @app.route('/submit',methods=['POST'])
 def results():
-	#try:
+	try:
 		if request.method == 'POST':
 			form = request.form
-			print form
 			form = dict(form)
+			for k in form.keys():
+				form[k] = form[k][0].encode('ascii')
+			print form
 			#form_dict['from'] = form['from']
 			#form_dict['to'] = form['to']
 			#form_dict['time'] = str(form['time'])
@@ -51,36 +52,56 @@ def results():
 			#form_dict['oCountry'] = str(form['oCountry'])
 			#form_dict['flight'] = str(form['flight'])
 			#form_dict['ip'] = request.remote_addr
-			print request.environ['REMOTE_ADDR']
-			form['ip'] = request.remote_addr
-			dump_to_mongo(form)
-			return jsonify(form)
-	#except:
-		#return "<center> <h5> Error 404 <h5> <center> "
+			#print request.environ['REMOTE_ADDR']
+			form['ip'] = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+			#form['ip'] = request.remote_addr
+			helper.dump_to_mongo(form)
+			if ( ( (form['from'] == 'bia') or (form['from'] == 'bandaranaike international airport'))  and ( (form['to']=='galle') or (form['to']=='hikaduwa'))):
+				#helper.dump_to_mongo(form)
+				print 'sending mail'
+				if helper.send_email_sms(form,mail_obj):
+					print 'DONE,mail sent'
+				return jsonify({'success':'true'})
+			return jsonify({'success':'false'})
+	except:
+		return "<center> <h5> Error 404 <h5> <center> "
 
 @app.route('/all',methods=['GET'])
 def all():
 	try:
 		if request.method == 'GET':
-			return jsonify(route_dict.keys())
+			keys = route_dict.keys()
+			#keys.remove('bia')
+			#keys.append('bandaranaike international airport')
+			return jsonify(keys)
 	except:
 		return jsonify({'no':'places'})
 
 @app.route('/admin',methods=['GET','POST'])
 def admin():
-	#try:
+	try:
 		if request.method == 'GET':
-			data = list(collection.find())
-			headers = ['from', 'to','time','date','adults','children', 'fname','lname','oCountry','email','phone','ip','time_of_entry','_id','flight','passport']
+			return render_template('admin.html')
 
-			with open('admin.csv','wb') as fou:
-				dw = csv.DictWriter(fou,delimiter='\t',fieldnames=headers)
-				dw.writeheader()
-				for i in data:
-					dw.writerow(i)
-			return "csv file created"
-	#except:
-		#return jsonify({'error':'error'})
+		if request.method == 'POST':
+			form = request.form
+			if form['password'] == 'creathives123':
+				data = list(collection.find())
+				print data
+				#headers = ['from', 'to','time','date','adults','fname','lname','oCountry','email','phone','ip','time_of_entry','_id','flight','passport']
+				headers = data[0].keys()
+				with open('admin.csv','wb') as fou:
+					dw = csv.DictWriter(fou,delimiter='\t',fieldnames=headers)
+					dw.writeheader()
+					for i in data:
+						dw.writerow(i)
+				print "csv file created"
+			        return send_file('admin.csv', as_attachment=True)
+			else:
+				return "<h1>you unauthorized PIG !!<h1>"
+
+	except:
+		return jsonify({'error':'error'})
 
 @app.route('/places',methods = ['GET','POST'])
 def places():
@@ -102,7 +123,23 @@ def routes():
 		if request.method == 'GET':
 			query = request.args.get('from')
 			query = query.lower()
-			result = route_dict[query]
+			print query
+
+			result = defaultdict()
+			"""CHAPPAR AMOGHA"""
+			#result['possible_destinations'] = helper.get_all_possible_routes(query)
+			destinations = []
+			query_result = route_dict[query]
+
+			route_dict['bandaranaike international airport'] = route_dict['bia']
+			for i in query_result:
+				destinations.append(i['name'])
+			
+			if 'bia' in destinations:
+				destinations.append('bandaranaike international airport')
+
+			result['query'] = route_dict[query]
+			result['possible_destinations'] = list(set(destinations))
 			return jsonify(result)
 	except:
 		return jsonify({'error':'error'})
@@ -110,4 +147,5 @@ def routes():
 
 
 if __name__ == "__main__":
-	app.run(debug=True, port=8080)#,threaded=True)
+	app.run(port=5000,host='0.0.0.0',threaded=True)
+
